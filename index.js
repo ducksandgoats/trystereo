@@ -2,6 +2,7 @@ import Channel from '@thaunknown/simple-peer/lite.js'
 
 export default class Trystereo extends EventTarget {
     constructor(url, hash, limit = 6, opts){
+        super()
         if(localStorage.getItem('id')){
             this.id = localStorage.getItem('id')
         } else {
