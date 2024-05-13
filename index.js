@@ -163,16 +163,6 @@ export default class Trystereo extends EventTarget {
     }
     soc(){
         this.socket = new WebSocket(this.url)
-        this.socket.addEventListener('open', handleOpen)
-        this.socket.addEventListener('message', handleMessage)
-        this.socket.addEventListener('error', handleError)
-        this.socket.addEventListener('close', handleClose)
-        const handleEvent = () => {
-            this.socket.removeEventListener('open', handleOpen)
-            this.socket.removeEventListener('message', handleMessage)
-            this.socket.removeEventListener('error', handleError)
-            this.socket.removeEventListener('close', handleClose)
-        }
         const handleOpen = (e) => {
             console.log(e)
             // this.relay = true
@@ -279,6 +269,16 @@ export default class Trystereo extends EventTarget {
             console.log(e)
             // this.relay = false
             handleEvent()
+        }
+        this.socket.addEventListener('open', handleOpen)
+        this.socket.addEventListener('message', handleMessage)
+        this.socket.addEventListener('error', handleError)
+        this.socket.addEventListener('close', handleClose)
+        const handleEvent = () => {
+            this.socket.removeEventListener('open', handleOpen)
+            this.socket.removeEventListener('message', handleMessage)
+            this.socket.removeEventListener('error', handleError)
+            this.socket.removeEventListener('close', handleClose)
         }
     }
     handleChannel(channel){
