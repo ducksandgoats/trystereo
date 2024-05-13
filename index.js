@@ -1,4 +1,4 @@
-import Channel from 'simple-peer-light'
+import Channel from '@thaunknown/simple-peer/lite.js'
 
 class Trystereo extends EventTarget {
     constructor(url, hash, limit = 6, opts){
@@ -11,7 +11,10 @@ class Trystereo extends EventTarget {
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.url = url
         this.hash = hash
-        this.limit = limit || 6
+        this.limit = limit || 2
+        if(this.limit > 6){
+            throw new Error('Limit can not be above 6')
+        }
         this.rtcOffers = new Map()
         this.wsOffers = new Map()
         this.channels = new Map()
@@ -20,8 +23,8 @@ class Trystereo extends EventTarget {
         this.announceSeconds = opts.announceSeconds || 33
         this.maxAnnounceSecs = opts.maxAnnounceSecs || 120
         this.ws()
-        this.timerWS = setInterval(() => {this.ws()}, 60000)
-        this.timerWRTC = setInterval(() => {this.wrtc()}, 30000)
+        this.timerWS = setInterval(() => {this.ws()}, 120000)
+        this.timerWRTC = setInterval(() => {this.wrtc()}, 60000)
     }
     initWRTC(){
         if(this.channels.size < this.limit){
