@@ -115,7 +115,7 @@ export default class Trystereo extends EventTarget {
         .then((offers) => {
             this.channels.forEach((chan) => {
                 offers.forEach((data) => {
-                    chan.send({offer_id: data.offer_id, action: 'signal', method: 'relay', status: false, shake: false})
+                    chan.send(JSON.stringify({offer_id: data.offer_id, action: 'signal', method: 'relay', status: false, shake: false}))
                 })
             })
         })
@@ -172,8 +172,7 @@ export default class Trystereo extends EventTarget {
                     arr.push({offer_id: val.offer_id, offer: await Promise.resolve(val.offer)});
                 };
                 return arr
-            })()
-            .then((data) => {
+            })().then((data) => {
                 this.socket.send(JSON.stringify({
                     action: 'announce',
                     info_hash: this.hash,
@@ -181,8 +180,7 @@ export default class Trystereo extends EventTarget {
                     peer_id: this.id,
                     offers: data
                 }))
-            })
-            .catch((e) => {
+            }).catch((e) => {
                 console.error(e)
             })
         }
@@ -310,7 +308,7 @@ export default class Trystereo extends EventTarget {
                             msg.answer = answer
                             msg.method = 'relay'
                             msg.status = true
-                            channel.send(msg)
+                            channel.send(JSON.stringify(msg))
                         })
                         peer.channels = new Set()
                         peer.signal(msg.offer)
@@ -320,27 +318,27 @@ export default class Trystereo extends EventTarget {
                         msg.method = 'relay'
                         // msg.response = this.id
                         msg.status = true
-                        channel.send(msg)
+                        channel.send(JSON.stringify(msg))
                     }
                 } else if(msg.method === 'relay'){
                     if(msg.status){
                         if(msg.shake){
                             msg.method = 'response'
                             if(this.channels.has(msg.request)){
-                                this.channels.get(msg.request).send(msg)
+                                this.channels.get(msg.request).send(JSON.stringify(msg))
                             }
                         } else {
                             msg.method = 'response'
                             msg.response = channel.id
                             if(this.channels.has(msg.request)){
-                                this.channels.get(msg.request).send(msg)
+                                this.channels.get(msg.request).send(JSON.stringify(msg))
                             }
                         }
                     } else {
                         if(msg.shake){
                             msg.method = 'request'
                             if(this.channels.has(msg.response)){
-                                this.channels.get(msg.response).send(msg)
+                                this.channels.get(msg.response).send(JSON.stringify(msg))
                             }
                         } else {
                             const mainData = this.checkSet(channel.channels, channel.id)
@@ -349,7 +347,7 @@ export default class Trystereo extends EventTarget {
                                 msg.request = channel.id
                                 mainData.data.forEach((data) => {
                                     if(this.channels.has(data)){
-                                        this.channels.get(data).send(msg)
+                                        this.channels.get(data).send(JSON.stringify(msg))
                                     }
                                 })
                             }
@@ -390,7 +388,7 @@ export default class Trystereo extends EventTarget {
                             // msg.response = this.id
                             msg.shake = true
                             msg.status = false
-                            channel.send(msg)
+                            channel.send(JSON.stringify(msg))
                         })
                         .catch((err) => {
                             console.error(err)
