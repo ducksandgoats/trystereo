@@ -1,5 +1,5 @@
 import Channel from '@thaunknown/simple-peer/lite.js'
-import {hex2bin} from 'uint8-util'
+import {hex2bin, bin2hex} from 'uint8-util'
 
 export default class Trystereo extends EventTarget {
     constructor(url, hash, limit = 6, opts){
@@ -203,7 +203,10 @@ export default class Trystereo extends EventTarget {
                 return
             }
             // handle message
-            if ((message.peer_id && message.peer_id === this.id) || message.info_hash !== this.hash){
+            const msgInfoHash = message.info_hash ? bin2hex(message.info_hash) : ''
+            const msgPeerId = message.peer_id ? bin2hex(message.peer_id) : ''
+            // const msgToPeerId = message.to_peer_id ? bin2hex(message.to_peer_id) : ''
+            if ((msgPeerId && msgPeerId === this.id) || msgInfoHash !== this.hash){
                 return
             }
 
@@ -232,23 +235,21 @@ export default class Trystereo extends EventTarget {
             //     this.announceInterval = setInterval(this.initWS, this.announceSecs * 1000)
             // }
             if (message.offer && message.offer_id) {
-                if (this.channels.has(message.peer_id)){
+                if (this.channels.has(msgPeerId)){
                     return
                 }
             
                 const peer = new Channel({initiator: false, trickle: false})
             
-                peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: hex2bin(this.hash), peer_id: hex2bin(this.id), to_peer_id: hex2bin(message.peer_id), offer_id: message.offer_id }))})
+                peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: hex2bin(this.hash), peer_id: hex2bin(this.id), to_peer_id: hex2bin(msgPeerId), offer_id: message.offer_id }))})
                 peer.channels = new Set()
-                // peer.on(events.connect, () => onConnect(peer, val.peer_id))
-                // peer.on(events.close, () => onDisconnect(peer, val.peer_id, val.offer_id))
                 peer.signal(message.offer)
-                peer.id = message.peer_id
+                peer.id = msgPeerId
                 this.handleChannel(peer)
                 return
             }
             if (val.answer) {
-                if (this.channels.has(message.peer_id)){
+                if (this.channels.has(msgPeerId)){
                     return
                 }
 
@@ -257,14 +258,8 @@ export default class Trystereo extends EventTarget {
                 }
         
                 const offer = this.wsOffers.get(message.offer_id)
-                // peer.on(events.connect, () =>
-                // onConnect(peer, val.peer_id, val.offer_id)
-                // )
-                // peer.on(events.close, () =>
-                // onDisconnect(peer, val.peer_id, val.offer_id)
-                // )
                 offer.signal(message.answer)
-                offer.id = message.peer_id
+                offer.id = msgPeerId
                 this.wsOffers.delete(offer.offer_id)
                 this.handleChannel(offer)
             }
@@ -371,12 +366,6 @@ export default class Trystereo extends EventTarget {
                         if(useOffer.relay){
                             return
                         }
-                        // peer.on(events.connect, () =>
-                        // onConnect(peer, val.peer_id, val.offer_id)
-                        // )
-                        // peer.on(events.close, () =>
-                        // onDisconnect(peer, val.peer_id, val.offer_id)
-                        // )
                         useOffer.signal(msg.answer)
                         useOffer.id = msg.response
                         this.rtcOffers.delete(useOffer.offer_id)
