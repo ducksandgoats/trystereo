@@ -1,4 +1,5 @@
 import Channel from '@thaunknown/simple-peer/lite.js'
+import {hex2bin} from 'uint8-util'
 
 export default class Trystereo extends EventTarget {
     constructor(url, hash, limit = 6, opts){
@@ -144,9 +145,9 @@ export default class Trystereo extends EventTarget {
                     if(data.length){
                         this.socket.send(JSON.stringify({
                             action: 'announce',
-                            info_hash: this.hash,
+                            info_hash: hex2bin(this.hash),
                             numwant: data.length,
-                            peer_id: this.id,
+                            peer_id: hex2bin(this.id),
                             offers: data
                         }))
                     }
@@ -181,9 +182,9 @@ export default class Trystereo extends EventTarget {
                 if(data.length){
                     this.socket.send(JSON.stringify({
                         action: 'announce',
-                        info_hash: this.hash,
+                        info_hash: hex2bin(this.hash),
                         numwant: data.length,
-                        peer_id: this.id,
+                        peer_id: hex2bin(this.id),
                         offers: data
                     }))
                 }
@@ -237,7 +238,7 @@ export default class Trystereo extends EventTarget {
             
                 const peer = new Channel({initiator: false, trickle: false})
             
-                peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: this.hash, peer_id: this.id, to_peer_id: message.peer_id, offer_id: message.offer_id }))})
+                peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: hex2bin(this.hash), peer_id: hex2bin(this.id), to_peer_id: hex2bin(message.peer_id), offer_id: message.offer_id }))})
                 peer.channels = new Set()
                 // peer.on(events.connect, () => onConnect(peer, val.peer_id))
                 // peer.on(events.close, () => onDisconnect(peer, val.peer_id, val.offer_id))
