@@ -216,7 +216,7 @@ export default class Trystereo extends EventTarget {
                 return
             }
 
-            const errMsg = val['failure reason']
+            const errMsg = message['failure reason']
 
             if (errMsg) {
                 console.error(`torrent tracker failure from ${this.socket.url} - ${errMsg}`)
