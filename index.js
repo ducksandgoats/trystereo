@@ -99,7 +99,7 @@ export default class Trystereo extends EventTarget {
         this.initWRTC()
         if(!this.rtcOffers.size){
             return
-        }
+        };
         (async () => {
             // for(const chan of this.channels.values()){
             //     for(const data of this.rtcOffers.values()){
@@ -113,15 +113,17 @@ export default class Trystereo extends EventTarget {
             return arr
         })()
         .then((offers) => {
-            this.channels.forEach((chan) => {
-                offers.forEach((data) => {
-                    chan.send(JSON.stringify({offer_id: data.offer_id, action: 'signal', method: 'relay', status: false, shake: false}))
+            if(offers.length){
+                this.channels.forEach((chan) => {
+                    offers.forEach((data) => {
+                        chan.send(JSON.stringify({offer_id: data.offer_id, action: 'signal', method: 'relay', status: false, shake: false}))
+                    })
                 })
-            })
+            }
         })
         .catch((err) => {
             console.error(err)
-        })
+        });
     }
     ws(){
         this.initWS()
@@ -130,7 +132,7 @@ export default class Trystereo extends EventTarget {
         }
         if(this.socket){
             if(this.socket.readyState === WebSocket.OPEN){
-                console.log('connected')
+                console.log('connected');
                 (async () => {
                     const arr = [];
                     for(const val of this.wsOffers.values()){
@@ -139,17 +141,19 @@ export default class Trystereo extends EventTarget {
                     return arr
                 })()
                 .then((data) => {
-                    this.socket.send(JSON.stringify({
-                        action: 'announce',
-                        info_hash: this.hash,
-                        numwant: data.length,
-                        peer_id: this.id,
-                        offers: data
-                    }))
+                    if(data.length){
+                        this.socket.send(JSON.stringify({
+                            action: 'announce',
+                            info_hash: this.hash,
+                            numwant: data.length,
+                            peer_id: this.id,
+                            offers: data
+                        }))
+                    }
                 })
                 .catch((e) => {
                     console.error(e)
-                })
+                });
             } else if(this.socket.readyState === WebSocket.CONNECTING){
                 console.log('connecting')
                 // notify it is connecting by emitting a connecting event with connecting string
@@ -164,7 +168,7 @@ export default class Trystereo extends EventTarget {
     soc(){
         this.socket = new WebSocket(this.url)
         const handleOpen = (e) => {
-            console.log(e)
+            console.log(e);
             // this.relay = true
             (async () => {
                 const arr = [];
@@ -172,17 +176,21 @@ export default class Trystereo extends EventTarget {
                     arr.push({offer_id: val.offer_id, offer: await Promise.resolve(val.offer)});
                 };
                 return arr
-            })().then((data) => {
-                this.socket.send(JSON.stringify({
-                    action: 'announce',
-                    info_hash: this.hash,
-                    numwant: data.length,
-                    peer_id: this.id,
-                    offers: data
-                }))
-            }).catch((e) => {
-                console.error(e)
+            })()
+            .then((data) => {
+                if(data.length){
+                    this.socket.send(JSON.stringify({
+                        action: 'announce',
+                        info_hash: this.hash,
+                        numwant: data.length,
+                        peer_id: this.id,
+                        offers: data
+                    }))
+                }
             })
+            .catch((e) => {
+                console.error(e)
+            });
         }
         const handleMessage = (e) => {
             console.log(e)
