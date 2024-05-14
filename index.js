@@ -422,6 +422,10 @@ export default class Trystereo extends EventTarget {
             channel.off('error', onError)
             channel.off('close', onClose)
         }
+        channel.on('connect', onConnect)
+        channel.on('data', onData)
+        channel.on('error', onError)
+        channel.on('close', onClose)
     }
     checkSet(check, main){
         const arr = []
