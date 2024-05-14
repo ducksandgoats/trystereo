@@ -196,7 +196,7 @@ export default class Trystereo extends EventTarget {
             console.log(e)
             let message
             try {
-                message = JSON.parse(e)
+                message = JSON.parse(e.data)
             } catch (error) {
                 console.error(error)
                 return
