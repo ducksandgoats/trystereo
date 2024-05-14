@@ -248,7 +248,7 @@ export default class Trystereo extends EventTarget {
                 this.handleChannel(peer)
                 return
             }
-            if (val.answer) {
+            if (message.answer) {
                 if (this.channels.has(msgPeerId)){
                     return
                 }
