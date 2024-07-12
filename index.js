@@ -1,6 +1,6 @@
-const Channel = require('@thaunknown/simple-peer/lite.js')
-const {hex2bin, bin2hex} = require('uint8-util')
-const Events = require('events')
+import Channel from '@thaunknown/simple-peer/lite.js'
+import {hex2bin, bin2hex} from 'uint8-util'
+import Events from 'events'
 
 export default class Trystereo extends Events {
     constructor(url, hash, limit = 6, opts){
