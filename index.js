@@ -1,7 +1,8 @@
-import Channel from '@thaunknown/simple-peer/lite.js'
-import {hex2bin, bin2hex} from 'uint8-util'
+const Channel = require('@thaunknown/simple-peer/lite.js')
+const {hex2bin, bin2hex} = require('uint8-util')
+const Events = require('events')
 
-export default class Trystereo extends EventTarget {
+export default class Trystereo extends Events {
     constructor(url, hash, limit = 6, opts){
         super()
         if(localStorage.getItem('id')){
@@ -238,7 +239,7 @@ export default class Trystereo extends EventTarget {
                     }
                 })
             }
-            this.dispatchEvent(new CustomEvent('connect', {detail: channel}))
+            this.emit('connect', channel)
             // channel.emit('connected', channel)
         }
         const onData = (data) => {
@@ -250,8 +251,8 @@ export default class Trystereo extends EventTarget {
                 console.error(error)
                 return
             }
-            this.dispatchEvent(new CustomEvent('message', {detail: msg}))
             // channel.emit('message', msg.user, msg.relay, msg.data)
+            this.emit('message', msg)
             if(msg.type){
                 this.channels.forEach((chan) => {
                     if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
@@ -276,7 +277,7 @@ export default class Trystereo extends EventTarget {
             if(this.channels.has(channel.id)){
                 this.channels.delete(channel.id)
             }
-            this.dispatchEvent(new CustomEvent('disconnect', {detail: channel}))
+            this.emit('disconnect', channel)
             // channel.emit('disconnected', channel)
         }
         const onHandle = () => {
