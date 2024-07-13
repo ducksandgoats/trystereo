@@ -75,7 +75,9 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
-        if(this.channels.size >= this.min)
+        if(this.channels.size >= this.min){
+            return
+        }
         this.initWS()
         if(!this.wsOffers.size){
             return
