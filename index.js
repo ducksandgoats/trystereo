@@ -3,7 +3,7 @@ import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 
 export default class Trystereo extends Events {
-    constructor(url, hash, max, min, opts){
+    constructor(url, hash, max = 6, min = 3, opts){
         super()
         if(localStorage.getItem('id')){
             this.id = localStorage.getItem('id')
