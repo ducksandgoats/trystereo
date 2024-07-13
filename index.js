@@ -3,7 +3,7 @@ import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 
 export default class Trystereo extends Events {
-    constructor(url, hash, limit = 6, opts){
+    constructor(url, hash, max, min, opts){
         super()
         if(localStorage.getItem('id')){
             this.id = localStorage.getItem('id')
@@ -14,10 +14,14 @@ export default class Trystereo extends Events {
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.url = url
         this.hash = hash
-        this.limit = limit || 2
-        if(this.limit > 6){
-            throw new Error('Limit can not be above 6')
+        if(!max || max <= min || max > 6){
+            throw new Error('max is incorrect')
         }
+        this.max = max
+        if(!min || min >= max || min < 1){
+            throw new Error('min is incorrect')
+        }
+        this.min = min
         this.wsOffers = new Map()
         this.channels = new Map()
         this.socket = null
@@ -48,8 +52,8 @@ export default class Trystereo extends Events {
         })
     }
     initWS(){
-        if(this.channels.size < this.limit){
-            const check = this.limit - this.channels.size
+        if(this.channels.size < this.max){
+            const check = this.max - this.channels.size
             if(this.wsOffers.size < check){
                 const test = check - this.wsOffers.size
                 for(let i = 0;i < test;i++){
@@ -71,6 +75,7 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
+        if(this.channels.size >= this.min)
         this.initWS()
         if(!this.wsOffers.size){
             return
@@ -154,7 +159,7 @@ export default class Trystereo extends Events {
                 return
             }
 
-            if(this.channels.size >= this.limit){
+            if(this.channels.size >= this.max){
                 this.wsOffers.forEach((data) => {data.destroy((err) => {if(err){console.error(err)}})})
                 this.wsOffers.clear()
                 return
