@@ -18,7 +18,7 @@ export default class Trystereo extends Events {
             throw new Error('max is incorrect')
         }
         this.max = max
-        if(!min || min >= max || min < 1){
+        if((min) && (min >= max || min < 1)){
             throw new Error('min is incorrect')
         }
         this.min = min
@@ -53,7 +53,7 @@ export default class Trystereo extends Events {
     }
     initWS(){
         if(this.channels.size < this.max){
-            const check = this.channels.size < this.min ? this.min - this.channels.size : this.max - this.channels.size
+            const check = this.max - this.channels.size
             if(this.wsOffers.size < check){
                 const test = check - this.wsOffers.size
                 for(let i = 0;i < test;i++){
@@ -75,6 +75,9 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
+        if(this.min && this.channels.size >= this.min){
+            return
+        }
         this.initWS()
         if(!this.wsOffers.size){
             return
