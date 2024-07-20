@@ -1,6 +1,6 @@
 {
   "name": "trystereo",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -11,8 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@thaunknown/simple-peer": "^10.0.2",
     "events": "^3.3.0",
+    "simple-peer-lite": "github:ducksandgoats/simple-peer",
     "uint8-util": "^2.2.5"
   }
 }

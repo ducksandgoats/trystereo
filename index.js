@@ -1,4 +1,4 @@
-import Channel from '@thaunknown/simple-peer/lite.js'
+import Channel from 'simple-peer-lite/lite'
 import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 
@@ -58,7 +58,7 @@ export default class Trystereo extends Events {
                 const test = check - this.wsOffers.size
                 for(let i = 0;i < test;i++){
                     const testID = Array(20).fill().map(() => {return this.charset[Math.floor(Math.random() * this.charset.length)]}).join('')
-                    const testChannel = new Channel({initiator: true, trickle: false})
+                    const testChannel = new Channel({initiator: true, trickle: false, initData: false})
                     testChannel.offer_id = testID
                     testChannel.offer = new Promise((res) => testChannel.once('signal', res))
                     testChannel.channels = new Set()
@@ -196,7 +196,7 @@ export default class Trystereo extends Events {
                     return
                 }
             
-                const peer = new Channel({initiator: false, trickle: false})
+                const peer = new Channel({initiator: false, trickle: false, initData: false})
             
                 peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: hex2bin(this.hash), peer_id: hex2bin(this.id), to_peer_id: hex2bin(msgPeerId), offer_id: message.offer_id }))})
                 peer.channels = new Set()
