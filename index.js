@@ -14,6 +14,7 @@ export default class Trystereo extends Events {
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.setOnData = opts.onData || null
         this.setOnSend = opts.onSend || null
+        this.setOnMeta = opts.onMesh === false ? opts.onMeta : true
         this.url = url
         this.hash = hash
         if(!max || max <= min || max > 6){
@@ -37,11 +38,19 @@ export default class Trystereo extends Events {
             if(this.setOnSend){
                 return this.setOnSend
             } else {
-                return (type, data) => {
-                    const meta = {user: this.id, relay: null, type, data}
-                    this.channels.forEach((prop) => {
-                        prop.send(JSON.stringify(meta))
-                    })
+                if(this.setOnMeta){
+                    return (type, data) => {
+                        const meta = {user: this.id, relay: null, type, data}
+                        this.channels.forEach((prop) => {
+                            prop.send(JSON.stringify(meta))
+                        })
+                    }
+                } else {
+                    return (data) => {
+                        this.channels.forEach((prop) => {
+                            prop.send(JSON.stringify(data))
+                        })
+                    }
                 }
             }
         })()
