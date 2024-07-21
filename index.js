@@ -12,6 +12,8 @@ export default class Trystereo extends Events {
             localStorage.setItem('id', this.id)
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
+        this.setOnData = opts.onData || null
+        this.setOnSend = opts.onSend || null
         this.url = url
         this.hash = hash
         if(!max || max <= min || max > 6){
@@ -31,6 +33,18 @@ export default class Trystereo extends Events {
         this.ws()
         this.timerWS = setInterval(() => {this.ws()}, this.announceSeconds)
         this.alternativeSeconds = 60 * 1000
+        this.onSend = (() => {
+            if(this.setOnSend){
+                return this.setOnSend
+            } else {
+                return (type, data) => {
+                    const meta = {user: this.id, relay: null, type, data}
+                    this.channels.forEach((prop) => {
+                        prop.send(JSON.stringify(meta))
+                    })
+                }
+            }
+        })()
     }
     quit(){
         this.wsOffers.forEach((data) => {
@@ -255,26 +269,32 @@ export default class Trystereo extends Events {
             this.emit('connect', channel)
             // channel.emit('connected', channel)
         }
-        const onData = (data) => {
-            // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
-            let msg
-            try {
-                msg = JSON.parse(new TextDecoder("utf-8").decode(data))
-            } catch (error) {
-                console.error(error)
-                return
-            }
-            // channel.emit('message', msg.user, msg.relay, msg.data)
-            this.emit('message', msg)
-            if(msg.type){
-                this.channels.forEach((chan) => {
-                    if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
-                        chan.send(JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
+        const onData = (() => {
+            if(this.setOnData){
+                return this.setOnData
+            } else {
+                return (data) => {
+                    // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
+                    let msg
+                    try {
+                        msg = JSON.parse(new TextDecoder("utf-8").decode(data))
+                    } catch (error) {
+                        console.error(error)
+                        return
                     }
-                })
+                    // channel.emit('message', msg.user, msg.relay, msg.data)
+                    this.emit('message', msg)
+                    if(msg.type){
+                        this.channels.forEach((chan) => {
+                            if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
+                                chan.send(JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
+                            }
+                        })
+                    }
+                    // handle msg
+                }
             }
-            // handle msg
-        }
+        })()
         // const onStream = (stream) => {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: stream}}))
         // }
@@ -305,11 +325,5 @@ export default class Trystereo extends Events {
         channel.on('data', onData)
         channel.on('error', onError)
         channel.on('close', onClose)
-    }
-    message(type, data){
-        const meta = {user: this.id, relay: null, type, data}
-        this.channels.forEach((prop) => {
-            prop.send(JSON.stringify(meta))
-        })
     }
 }
