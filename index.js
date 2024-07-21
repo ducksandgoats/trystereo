@@ -6,7 +6,7 @@ import {LocalStorage} from 'node-localstorage'
 export default class Trystereo extends Events {
     constructor(url, hash, max = 6, min = 3, opts){
         super()
-        const localStore = !localStorage ? new LocalStorage('./trystereo') : localStorage
+        const localStore = !window ? new LocalStorage('./trystereo') : localStorage
         if(localStore.getItem('id')){
             this.id = localStore.getItem('id')
         } else {
