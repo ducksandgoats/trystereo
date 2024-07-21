@@ -5,9 +5,8 @@ import Events from 'events'
 export default class Trystereo extends Events {
     constructor(url, hash, max = 6, min = 3, opts){
         super()
-        if(localStorage.getItem('id')){
-            this.id = localStorealocalStoragegetItem('id')
-        } else {
+        this.id = localStorage.getItem('id')
+        if(!this.id){
             this.id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => {return ('0' + byte.toString(16)).slice(-2)}).join('')
             localStorage.setItem('id', this.id)
         }
