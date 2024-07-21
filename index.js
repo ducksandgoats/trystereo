@@ -42,13 +42,13 @@ export default class Trystereo extends Events {
                     return (type, data) => {
                         const meta = {user: this.id, relay: null, type, data}
                         this.channels.forEach((prop) => {
-                            prop.send(JSON.stringify(meta))
+                            prop.send(meta)
                         })
                     }
                 } else {
                     return (data) => {
                         this.channels.forEach((prop) => {
-                            prop.send(JSON.stringify(data))
+                            prop.send(data)
                         })
                     }
                 }
