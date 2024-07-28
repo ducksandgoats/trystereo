@@ -11,9 +11,7 @@ export default class Trystereo extends Events {
             localStorage.setItem('id', this.id)
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
-        this.setOnData = opts.onData || null
-        this.setOnSend = opts.onSend || null
-        this.setOnMeta = opts.onMesh === false ? opts.onMeta : true
+        this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
         this.url = url
         this.hash = hash
         if(!max || max <= min || max > 6){
@@ -33,26 +31,6 @@ export default class Trystereo extends Events {
         this.ws()
         this.timerWS = setInterval(() => {this.ws()}, this.announceSeconds)
         this.alternativeSeconds = 60 * 1000
-        this.onSend = (() => {
-            if(this.setOnSend){
-                return this.setOnSend
-            } else {
-                if(this.setOnMeta){
-                    return (type, data) => {
-                        const meta = {user: this.id, relay: null, type, data}
-                        this.channels.forEach((prop) => {
-                            prop.send(meta)
-                        })
-                    }
-                } else {
-                    return (data) => {
-                        this.channels.forEach((prop) => {
-                            prop.send(data)
-                        })
-                    }
-                }
-            }
-        })()
     }
     quit(){
         this.wsOffers.forEach((data) => {
@@ -80,7 +58,7 @@ export default class Trystereo extends Events {
                 const test = check - this.wsOffers.size
                 for(let i = 0;i < test;i++){
                     const testID = Array(20).fill().map(() => {return this.charset[Math.floor(Math.random() * this.charset.length)]}).join('')
-                    const testChannel = new Channel({initiator: true, trickle: false, initData: false})
+                    const testChannel = new Channel({...this.opts, initiator: true, trickle: false, initData: false})
                     testChannel.offer_id = testID
                     testChannel.offer = new Promise((res) => testChannel.once('signal', res))
                     testChannel.channels = new Set()
@@ -155,6 +133,7 @@ export default class Trystereo extends Events {
                 for(const val of this.wsOffers.values()){
                     arr.push({offer_id: val.offer_id, offer: await Promise.resolve(val.offer)});
                 };
+                console.log('arr: ', arr.length, arr)
                 return arr
             })()
             .then((data) => {
@@ -218,7 +197,7 @@ export default class Trystereo extends Events {
                     return
                 }
             
-                const peer = new Channel({initiator: false, trickle: false, initData: false})
+                const peer = new Channel({...this.opts, initiator: false, trickle: false, initData: false})
             
                 peer.once('signal', (answer) => {this.socket.send(JSON.stringify({ answer, action: 'announce', info_hash: hex2bin(this.hash), peer_id: hex2bin(this.id), to_peer_id: hex2bin(msgPeerId), offer_id: message.offer_id }))})
                 peer.channels = new Set()
@@ -269,40 +248,54 @@ export default class Trystereo extends Events {
                 this.channels.set(channel.id, channel)
                 this.channels.forEach((data) => {
                     if(data.id !== channel.id){
-                        data.send(JSON.stringify({type: 'channels', method: 'add', id: channel.id}))
-                        channel.send(JSON.stringify({type: 'channels', method: 'add', id: data.id}))
+                        data.send(JSON.stringify({type: 'add', id: channel.id}))
+                        channel.send(JSON.stringify({type: 'add', id: data.id}))
                     }
                 })
             }
             this.emit('connect', channel)
             // channel.emit('connected', channel)
         }
-        const onData = (() => {
-            if(this.setOnData){
-                return this.setOnData
-            } else {
-                return (data) => {
-                    // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
-                    let msg
-                    try {
-                        msg = JSON.parse(new TextDecoder("utf-8").decode(data))
-                    } catch (error) {
-                        console.error(error)
-                        return
+        const onData = (data) => {
+            // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
+            let msg
+            try {
+                msg = JSON.parse(new TextDecoder("utf-8").decode(data))
+                if(msg.data){
+                    this.emit('message', msg.data)
+                    this.handleSession(channel, JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
+                } else if(msg.type){
+                    if(msg.type === 'add'){
+                        if(!channel.channels.has(msg.id)){
+                            channel.channels.add(msg.id)
+                        }
+                    } else if(msg.type === 'sub'){
+                        if(channel.channels.has(msg.id)){
+                            channel.channels.delete(msg.id)
+                        }
+                    } else {
+                        console.error('data is invalid')
                     }
-                    // channel.emit('message', msg.user, msg.relay, msg.data)
-                    this.emit('message', msg)
-                    if(msg.type){
-                        this.channels.forEach((chan) => {
-                            if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
-                                chan.send(JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
-                            }
-                        })
-                    }
-                    // handle msg
+                } else {
+                    console.error('data is invalid')
                 }
+            } catch (error) {
+                console.error(error)
+                this.emit('data', data)
+                this.handleSession(channel, data)
+                return
             }
-        })()
+            // channel.emit('message', msg.user, msg.relay, msg.data)
+            // this.emit('message', msg)
+            // if(msg.type){
+            //     this.channels.forEach((chan) => {
+            //         if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
+            //             chan.send(JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
+            //         }
+            //     })
+            // }
+            // handle msg
+        }
         // const onStream = (stream) => {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: stream}}))
         // }
@@ -315,6 +308,11 @@ export default class Trystereo extends Events {
         const onClose = () => {
             // this.dispatchEvent(new CustomEvent('close', {detail: channel}))
             onHandle()
+            this.channels.forEach((chan) => {
+                if(chan.id !== channel.id){
+                    chan.send(JSON.stringify({type: 'sub', id: channel.id}))
+                }
+            })
             if(this.channels.has(channel.id)){
                 this.channels.delete(channel.id)
             }
@@ -333,5 +331,28 @@ export default class Trystereo extends Events {
         channel.on('data', onData)
         channel.on('error', onError)
         channel.on('close', onClose)
+    }
+    handleSession(chans, data){
+        this.channels.forEach((chan) => {
+            if(chan.id !== chans.id){
+                if(!chans.channels.has(chan.id)){
+                    // if(!chans.channels.intersection(chan.channels).size){
+                    //     chan.send(data)
+                    // }
+                    chan.send(data)
+                }
+            }
+        })
+    }
+    onMessage(data){
+        const test = {user: this.id, relay: null, data}
+        this.channels.forEach((prop) => {
+            prop.send(test)
+        })
+    }
+    onData(data){
+        this.channels.forEach((prop) => {
+            prop.send(data)
+        })
     }
 }

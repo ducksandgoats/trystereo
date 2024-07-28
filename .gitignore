@@ -114,3 +114,7 @@ dist
 
 # We don't need package locks in a library
 package-lock.json
+
+# we don't need the test.js file
+edit.js
+test.js
