@@ -1,4 +1,4 @@
-import Channel from 'simple-peer-lite/lite.js'
+import Channel from '@thaunknown/simple-peer/lite.js'
 import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 
