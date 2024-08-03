@@ -12,8 +12,8 @@ export default class Trystereo extends Events {
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
-        this.url = url
         this.hash = hash
+        this.url = url + '?info_hash=' + this.hash
         if(!max || max <= min || max > 6){
             throw new Error('max is incorrect')
         }
