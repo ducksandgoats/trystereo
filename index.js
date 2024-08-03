@@ -248,8 +248,8 @@ export default class Trystereo extends Events {
                 this.channels.set(channel.id, channel)
                 this.channels.forEach((data) => {
                     if(data.id !== channel.id){
-                        data.send(JSON.stringify({type: 'add', id: channel.id}))
-                        channel.send(JSON.stringify({type: 'add', id: data.id}))
+                        data.send('trystereo:add:' + channel.id)
+                        channel.send('trystereo:add:' + data.id)
                     }
                 })
             }
@@ -258,43 +258,28 @@ export default class Trystereo extends Events {
         }
         const onData = (data) => {
             // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
-            let msg
-            try {
-                msg = JSON.parse(new TextDecoder("utf-8").decode(data))
-                if(msg.data){
-                    this.emit('message', msg.data)
-                    this.handleSession(channel, JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
-                } else if(msg.type){
-                    if(msg.type === 'add'){
-                        if(!channel.channels.has(msg.id)){
-                            channel.channels.add(msg.id)
+            if(typeof(data) === 'string'){
+                if(data.startsWith('trystereo')){
+                    data = data.replace('trystereo:', '')
+                    if(data.startsWith('add')){
+                        data = data.replace('add:', '')
+                        if(!channel.channels.has(data)){
+                            channel.channels.add(data)
                         }
-                    } else if(msg.type === 'sub'){
-                        if(channel.channels.has(msg.id)){
-                            channel.channels.delete(msg.id)
+                    } else if(data.startsWith('sub')){
+                        data = data.replace('sub:', '')
+                        if(channel.channels.has(data)){
+                            channel.channels.delete(data)
                         }
                     } else {
                         console.error('data is invalid')
                     }
                 } else {
-                    console.error('data is invalid')
+                    this.emit('data', data)
                 }
-            } catch (error) {
-                console.error(error)
+            } else {
                 this.emit('data', data)
-                this.handleSession(channel, data)
-                return
             }
-            // channel.emit('message', msg.user, msg.relay, msg.data)
-            // this.emit('message', msg)
-            // if(msg.type){
-            //     this.channels.forEach((chan) => {
-            //         if(chan.id !== channel.id && !channel.channels.includes(chan.id) && !chan.channels.includes(channel.id)){
-            //             chan.send(JSON.stringify({user: msg.user, relay: this.id, data: msg.data}))
-            //         }
-            //     })
-            // }
-            // handle msg
         }
         // const onStream = (stream) => {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: stream}}))
@@ -310,7 +295,7 @@ export default class Trystereo extends Events {
             onHandle()
             this.channels.forEach((chan) => {
                 if(chan.id !== channel.id){
-                    chan.send(JSON.stringify({type: 'sub', id: channel.id}))
+                    chan.send('trystereo:sub:' + channel.id)
                 }
             })
             if(this.channels.has(channel.id)){
