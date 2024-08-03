@@ -180,7 +180,7 @@ export default class Trystereo extends Events {
                 console.error(`torrent tracker failure from ${this.socket.url} - ${errMsg}`)
                 if(errMsg === 'Relaying'){
                 if(message.relay){
-                    this.url = message.relay
+                    this.url = message.relay + '?info_hash=' + this.hash
                     this.socket.close()
                     this.soc()
                 }
