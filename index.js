@@ -259,14 +259,14 @@ export default class Trystereo extends Events {
         const onData = (data) => {
             // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
             if(typeof(data) === 'string'){
-                if(data.startsWith('trystereo')){
+                if(data.startsWith('trystereo:')){
                     data = data.replace('trystereo:', '')
-                    if(data.startsWith('add')){
+                    if(data.startsWith('add:')){
                         data = data.replace('add:', '')
                         if(!channel.channels.has(data)){
                             channel.channels.add(data)
                         }
-                    } else if(data.startsWith('sub')){
+                    } else if(data.startsWith('sub:')){
                         data = data.replace('sub:', '')
                         if(channel.channels.has(data)){
                             channel.channels.delete(data)
