@@ -24,6 +24,7 @@ export default class Trystereo extends Events {
         this.min = min
         this.wsOffers = new Map()
         this.channels = new Map()
+        // this.extra = new Map()
         this.socket = null
         // this.relay = false
         this.announceSeconds = opts.announceSeconds || 33 * 1000
@@ -245,6 +246,7 @@ export default class Trystereo extends Events {
         const onConnect = () => {
             // this.dispatchEvent(new CustomEvent('connect', {detail: channel}))
             if(!this.channels.has(channel.id)){
+                channel.unsend = new Set()
                 this.channels.set(channel.id, channel)
                 this.channels.forEach((data) => {
                     if(data.id !== channel.id){
@@ -260,24 +262,75 @@ export default class Trystereo extends Events {
             // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
             if(typeof(data) === 'string'){
                 if(data.startsWith('trystereo:')){
-                    data = data.replace('trystereo:', '')
-                    if(data.startsWith('add:')){
-                        data = data.replace('add:', '')
-                        if(!channel.channels.has(data)){
-                            channel.channels.add(data)
+                    const stereo = data.replace('trystereo:', '')
+                    if(stereo.startsWith('add:')){
+                        const add = stereo.replace('add:', '')
+                        if(!channel.channels.has(add)){
+                            channel.channels.add(add)
+                            for(const chan of this.channels.values()){
+                                if(channel.id !== chan.id){
+                                    if(chan.channels.has(add)){
+                                        channel.send('trystereo:unsend:' + add)
+                                        if(!channel.unsend.has(add)){
+                                            channel.unsend.add(add)
+                                        }
+                                        // if(this.extra.has(data)){
+                                        //     this.extra.set(data, this.extra.get(data) + 1)
+                                        // } else {
+                                        //     this.extra.set(data, 1)
+                                        // }
+                                        break
+                                    }
+                                }
+                            }
                         }
-                    } else if(data.startsWith('sub:')){
-                        data = data.replace('sub:', '')
-                        if(channel.channels.has(data)){
-                            channel.channels.delete(data)
+                    } else if(stereo.startsWith('sub:')){
+                        const sub = stereo.replace('sub:', '')
+                        if(channel.channels.has(sub)){
+                            channel.channels.delete(sub)
+                            if(!channel.unsend.has(sub)){
+                                for(const chan of this.channels.values()){
+                                    if(channel.id !== chan.id){
+                                        if(chan.channels.has(sub)){
+                                            chan.send('trystereo:send:' + sub)
+                                            if(chan.unsend.has(sub)){
+                                                chan.unsend.delete(sub)
+                                            }
+                                            // if(this.extra.has(data)){
+                                            //     const crunch = this.extra.get(data) - 1
+                                            //     if(crunch){
+                                            //         this.extra.set(data, crunch)
+                                            //     } else {
+                                            //         this.extra.delete(data)
+                                            //     }
+                                            // } else {
+                                            //     console.error('should have an extra user but did not find any')
+                                            // }
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if(stereo.startsWith('unsend:')){
+                        const unsendVar = stereo.replace('unsend:', '')
+                        if(!channel.unsend.has(unsendVar)){
+                            channel.unsend.add(unsendVar)
+                        }
+                    } else if(stereo.startsWith('send:')){
+                        const sendVar = stereo.replace('send:', '')
+                        if(channel.unsend.has(sendVar)){
+                            channel.unsend.delete(sendVar)
                         }
                     } else {
                         console.error('data is invalid')
                     }
                 } else {
+                    this.onData(channel, data)
                     this.emit('data', data)
                 }
             } else {
+                this.onData(channel, data)
                 this.emit('data', data)
             }
         }
@@ -293,6 +346,21 @@ export default class Trystereo extends Events {
         const onClose = () => {
             // this.dispatchEvent(new CustomEvent('close', {detail: channel}))
             onHandle()
+            channel.channels.forEach((id) => {
+                if(!channel.unsend.has(id)){
+                    for(const chan of this.channels.values()){
+                        if(channel.id !== chan.id){
+                            if(chan.channels.has(id)){
+                                chan.send('trystereo:send:' + id)
+                                if(chan.unsend.has(id)){
+                                    chan.unsend.delete(id)
+                                }
+                                break
+                            }
+                        }
+                    }
+                }
+            })
             this.channels.forEach((chan) => {
                 if(chan.id !== channel.id){
                     chan.send('trystereo:sub:' + channel.id)
@@ -329,15 +397,18 @@ export default class Trystereo extends Events {
             }
         })
     }
-    onMessage(data){
-        const test = {user: this.id, relay: null, data}
-        this.channels.forEach((prop) => {
-            prop.send(test)
-        })
-    }
-    onData(data){
+    onSend(data){
         this.channels.forEach((prop) => {
             prop.send(data)
+        })
+    }
+    onData(channel, data){
+        this.channels.forEach((chan) => {
+            if(channel.id !== chan.id){
+                if(!chan.channels.has(channel.id) && !chan.unsend.has(channel.id)){
+                    chan.send(data)
+                }
+            }
         })
     }
 }
