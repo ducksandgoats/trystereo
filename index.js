@@ -12,6 +12,7 @@ export default class Trystereo extends Events {
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
+        this.str = Boolean(opts.str)
         this.hash = hash
         this.url = url + '?info_hash=' + this.hash
         if(!max || max <= min || max > 6){
@@ -259,10 +260,10 @@ export default class Trystereo extends Events {
             // channel.emit('connected', channel)
         }
         const onData = (data) => {
-            // this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: data}}))
-            if(typeof(data) === 'string'){
-                if(data.startsWith('trystereo:')){
-                    const stereo = data.replace('trystereo:', '')
+            if(this.str){
+                const str = new TextDecoder().decode(data)
+                if(str.startsWith('trystereo:')){
+                    const stereo = str.replace('trystereo:', '')
                     if(stereo.startsWith('add:')){
                         const add = stereo.replace('add:', '')
                         if(!channel.channels.has(add)){
