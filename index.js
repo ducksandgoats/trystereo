@@ -261,8 +261,90 @@ export default class Trystereo extends Events {
             // channel.emit('connected', channel)
         }
         const onData = (data) => {
-            this.onData(channel, data)
-            this.emit('data', data)
+            if(this.str){
+                data = new TextDecoder().decode(data)
+                if(data.startsWith('trystereo:')){
+                    data = data.replace('trystereo:', '')
+                    if(data.startsWith('add:')){
+                        const add = data.replace('add:', '')
+                        if(!channel.channels.has(add)){
+                            channel.channels.add(add)
+                            for(const chan of this.channels.values()){
+                                if(channel.id !== chan.id){
+                                    if(chan.channels.has(add)){
+                                        channel.send('trystereo:unsend:' + add)
+                                        if(!channel.unsend.has(add)){
+                                            channel.unsend.add(add)
+                                        }
+                                        // if(this.extra.has(data)){
+                                        //     this.extra.set(data, this.extra.get(data) + 1)
+                                        // } else {
+                                        //     this.extra.set(data, 1)
+                                        // }
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                    } else if(data.startsWith('sub:')){
+                        const sub = data.replace('sub:', '')
+                        if(channel.channels.has(sub)){
+                            channel.channels.delete(sub)
+                            if(!channel.unsend.has(sub)){
+                                for(const chan of this.channels.values()){
+                                    if(channel.id !== chan.id){
+                                        if(chan.channels.has(sub)){
+                                            chan.send('trystereo:send:' + sub)
+                                            if(chan.unsend.has(sub)){
+                                                chan.unsend.delete(sub)
+                                            }
+                                            // if(this.extra.has(data)){
+                                            //     const crunch = this.extra.get(data) - 1
+                                            //     if(crunch){
+                                            //         this.extra.set(data, crunch)
+                                            //     } else {
+                                            //         this.extra.delete(data)
+                                            //     }
+                                            // } else {
+                                            //     console.error('should have an extra user but did not find any')
+                                            // }
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if(data.startsWith('unsend:')){
+                        const unsendVar = data.replace('unsend:', '')
+                        if(!channel.unsend.has(unsendVar)){
+                            channel.unsend.add(unsendVar)
+                        }
+                    } else if(data.startsWith('send:')){
+                        const sendVar = data.replace('send:', '')
+                        if(channel.unsend.has(sendVar)){
+                            channel.unsend.delete(sendVar)
+                        }
+                    } else {
+                        console.error('data is invalid')
+                    }
+                } else {
+                    if(this.jay){
+                        try {
+                            const test = JSON.parse(data)
+                            this.onData(channel, test)
+                            this.emit('data', test)
+                        } catch (err) {
+                            console.error(err)
+                        }
+                    } else {
+                        this.onData(channel, data)
+                        this.emit('data', data)
+                    }
+                }
+            } else {
+                this.onData(channel, data)
+                this.emit('data', data)
+            }
         }
         // const onStream = (stream) => {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: stream}}))
