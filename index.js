@@ -33,6 +33,7 @@ export default class Trystereo extends Events {
         this.ws()
         this.timerWS = setInterval(() => {this.ws()}, this.announceSeconds)
         this.alternativeSeconds = 60 * 1000
+        this.handler = opts.handler && typeof(opts.handler) === 'function' ? opts.handler : null
     }
     quit(){
         this.wsOffers.forEach((data) => {
@@ -330,12 +331,18 @@ export default class Trystereo extends Events {
                     try {
                         data = JSON.parse(data)
                         this.onData(channel, data)
+                        if(this.handler){
+                            data = this.handler(data)
+                        }
                         this.emit('data', data)
                     } catch (err) {
                         console.error(err)
                     }
                 } else {
                     this.onData(channel, data)
+                    if(this.handler){
+                        data = this.handler(data)
+                    }
                     this.emit('data', data)
                 }
             }
