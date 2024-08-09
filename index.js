@@ -332,18 +332,30 @@ export default class Trystereo extends Events {
                         data = JSON.parse(data)
                         this.onData(channel, data)
                         if(this.handler){
-                            data = this.handler(data)
+                            if(this.handler.constructor.name === 'AsyncFunction'){
+                                this.handler(data).then((res) => {this.emit('data', res)}).catch((e) => {console.error(e)})
+                            } else {
+                                data = this.handler(data)
+                                this.emit('data', data)
+                            }
+                        } else {
+                            this.emit('data', data)
                         }
-                        this.emit('data', data)
                     } catch (err) {
                         console.error(err)
                     }
                 } else {
                     this.onData(channel, data)
                     if(this.handler){
-                        data = this.handler(data)
+                        if(this.handler.constructor.name === 'AsyncFunction'){
+                            this.handler(data).then((res) => {this.emit('data', res)}).catch((e) => {console.error(e)})
+                        } else {
+                            data = this.handler(data)
+                            this.emit('data', data)
+                        }
+                    } else {
+                        this.emit('data', data)
                     }
-                    this.emit('data', data)
                 }
             }
         }
