@@ -3,7 +3,7 @@ import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 
 export default class Trystereo extends Events {
-    constructor(url, hash, max = 6, min = 3, opts){
+    constructor(url, hash, opts){
         super()
         this.id = localStorage.getItem('id')
         if(!this.id){
@@ -15,14 +15,30 @@ export default class Trystereo extends Events {
         this.jsonParse = Boolean(opts.jsonParse)
         this.hash = hash
         this.url = url + '?info_hash=' + this.hash
-        if(!max || max <= min || max > 6){
-            throw new Error('max is incorrect')
+        if(opts.max){
+            if(typeof(opts.max) === 'number' && opts.max <= 6){
+                this.max = opts.max
+            } else {
+                throw new Error('max is invalid')
+            }
+        } else {
+            this.max = 6
         }
-        this.max = max
-        if((min) && (min >= max || min < 1)){
-            throw new Error('min is incorrect')
+        if(opts.min){
+            if(typeof(opts.min) === 'number' && opts.min >= 1){
+                this.min = opts.min
+            } else {
+                throw new Error('min is invalid')
+            }
+        } else {
+            this.min = 3
         }
-        this.min = min
+        if(this.max <= this.min){
+            throw new Error('max is below or same as min')
+        }
+        if(this.min >= this.max){
+            throw new Error('min is above or same as max')
+        }
         this.wsOffers = new Map()
         this.channels = new Map()
         // this.extra = new Map()
