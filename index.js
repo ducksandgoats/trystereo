@@ -16,7 +16,7 @@ export default class Trystereo extends Events {
         this.hash = hash
         this.url = url + '?info_hash=' + this.hash
         if(opts.max){
-            if(typeof(opts.max) === 'number' && opts.max <= 6){
+            if(typeof(opts.max) === 'number' && opts.max <= 6 && opts.max > 0){
                 this.max = opts.max
             } else {
                 throw new Error('max is invalid')
@@ -25,7 +25,7 @@ export default class Trystereo extends Events {
             this.max = 6
         }
         if(opts.min){
-            if(typeof(opts.min) === 'number' && opts.min >= 1){
+            if(typeof(opts.min) === 'number' && opts.min >= 1 && opts.min < 7){
                 this.min = opts.min
             } else {
                 throw new Error('min is invalid')
