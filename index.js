@@ -39,6 +39,7 @@ export default class Trystereo extends Events {
         if(this.min > this.max){
             throw new Error('min is above or same as max')
         }
+        this.alwaysMax = Boolean(opts.alwaysMax)
         this.wsOffers = new Map()
         this.channels = new Map()
         // this.extra = new Map()
@@ -94,14 +95,26 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
-        if(this.channels.size >= this.min){
-            this.wsOffers.forEach((data) => {
-                data.destroy((err) => {
-                    console.error(err)
+        if(this.alwaysMax){
+            if(this.channels.size >= this.max){
+                this.wsOffers.forEach((data) => {
+                    data.destroy((err) => {
+                        console.error(err)
+                    })
                 })
-            })
-            this.wsOffers.clear()
-            return
+                this.wsOffers.clear()
+                return
+            }
+        } else {
+            if(this.channels.size >= this.min){
+                this.wsOffers.forEach((data) => {
+                    data.destroy((err) => {
+                        console.error(err)
+                    })
+                })
+                this.wsOffers.clear()
+                return
+            }
         }
         this.initWS()
         if(!this.wsOffers.size){
@@ -412,9 +425,6 @@ export default class Trystereo extends Events {
             })
             if(this.channels.has(channel.id)){
                 this.channels.delete(channel.id)
-            }
-            if(this.channels.size < this.min){
-                this.ws()
             }
             this.emit('disconnect', channel)
             // channel.emit('disconnected', channel)
