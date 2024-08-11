@@ -33,10 +33,10 @@ export default class Trystereo extends Events {
         } else {
             this.min = 3
         }
-        if(this.max <= this.min){
+        if(this.max < this.min){
             throw new Error('max is below or same as min')
         }
-        if(this.min >= this.max){
+        if(this.min > this.max){
             throw new Error('min is above or same as max')
         }
         this.wsOffers = new Map()
