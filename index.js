@@ -382,7 +382,8 @@ export default class Trystereo extends Events {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: {track, stream}}}))
         // }
         const onError = (err) => {
-            this.emit('error', channel.id, err)
+            err.id = channel.id
+            this.emit('error', err)
         }
         const onClose = () => {
             // this.dispatchEvent(new CustomEvent('close', {detail: channel}))
