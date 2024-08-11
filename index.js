@@ -112,8 +112,8 @@ export default class Trystereo extends Events {
                     })
                 })
                 this.wsOffers.clear()
-                return
             }
+            return
         }
         this.initWS()
         if(!this.wsOffers.size){
