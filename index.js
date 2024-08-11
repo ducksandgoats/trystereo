@@ -94,7 +94,7 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
-        if(this.min && this.channels.size >= this.min){
+        if(this.channels.size >= this.min){
             this.wsOffers.forEach((data) => {
                 data.destroy((err) => {
                     console.error(err)
@@ -412,6 +412,9 @@ export default class Trystereo extends Events {
             })
             if(this.channels.has(channel.id)){
                 this.channels.delete(channel.id)
+            }
+            if(this.channels.size < this.min){
+                this.ws()
             }
             this.emit('disconnect', channel)
             // channel.emit('disconnected', channel)
