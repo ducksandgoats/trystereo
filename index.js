@@ -368,7 +368,7 @@ export default class Trystereo extends Events {
                 if(this.handler){
                     this.handler(data, (datas) => {this.onSend(datas, channel.id)}, () => {this.emit('data', data, channel.id), () => {this.onData(channel, data)}})
                 } else {
-                    this.emit('data', data)
+                    this.emit('data', data, channel.id)
                     this.onData(channel, data)
                 }
             }
