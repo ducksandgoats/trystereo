@@ -360,32 +360,16 @@ export default class Trystereo extends Events {
                 if(this.jsonParse){
                     try {
                         data = JSON.parse(data)
-                        this.onData(channel, data)
-                        if(this.handler){
-                            if(this.handler.constructor.name === 'AsyncFunction'){
-                                this.handler(data).then((res) => {this.emit('data', res)}).catch((e) => {console.error(e)})
-                            } else {
-                                data = this.handler(data)
-                                this.emit('data', data)
-                            }
-                        } else {
-                            this.emit('data', data)
-                        }
                     } catch (err) {
                         console.error(err)
+                        return
                     }
+                }
+                if(this.handler){
+                    this.handler(data, (datas) => {this.emit('data', datas, channel.id), (infos) => {this.onData(channel, infos)}})
                 } else {
                     this.onData(channel, data)
-                    if(this.handler){
-                        if(this.handler.constructor.name === 'AsyncFunction'){
-                            this.handler(data).then((res) => {this.emit('data', res)}).catch((e) => {console.error(e)})
-                        } else {
-                            data = this.handler(data)
-                            this.emit('data', data)
-                        }
-                    } else {
-                        this.emit('data', data)
-                    }
+                    this.emit('data', data)
                 }
             }
         }
@@ -453,10 +437,16 @@ export default class Trystereo extends Events {
             }
         })
     }
-    onSend(data){
-        this.channels.forEach((prop) => {
-            prop.send(data)
-        })
+    onSend(data, id = null){
+        if(id){
+            if(this.channels.has(id)){
+                this.channels.get(id).send(data)
+            }
+        } else {
+            this.channels.forEach((prop) => {
+                prop.send(data)
+            })
+        }
     }
     onData(channel, data){
         this.channels.forEach((chan) => {
