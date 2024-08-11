@@ -134,6 +134,8 @@ export default class Trystereo extends Events {
             } else if(this.socket.readyState === WebSocket.CONNECTING){
                 console.log('connecting')
                 // notify it is connecting by emitting a connecting event with connecting string
+            } else if(this.socket.readyState === WebSocket.CLOSING){
+                this.checkClosing()
             } else {
                 delete this.socket
                 this.soc()
@@ -452,5 +454,15 @@ export default class Trystereo extends Events {
                 }
             }
         })
+    }
+    checkClosing(){
+        setTimeout(() => {
+            if(this.socket.readyState === WebSocket.CLOSED){
+                delete this.socket
+                this.soc()
+            } else {
+                setTimeout(() => {this.checkClosing()}, 1500)
+            }
+        }, 1500)
     }
 }
