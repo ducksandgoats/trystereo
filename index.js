@@ -42,6 +42,7 @@ export default class Trystereo extends Events {
         this.clearOnMin = Boolean(opts.clearOnMin)
         this.wsOffers = new Map()
         this.channels = new Map()
+        this.tracks = new Set()
         // this.extra = new Map()
         this.socket = null
         // this.relay = false
@@ -50,7 +51,8 @@ export default class Trystereo extends Events {
         this.ws()
         this.timerWS = setInterval(() => {this.ws()}, this.announceSeconds)
         this.alternativeSeconds = 60 * 1000
-        this.handler = opts.handler && typeof(opts.handler) === 'function' ? opts.handler : null
+        this.deDupe = opts.deDupe
+        this.deDuped = this.deDupe ? new Set() : null
     }
     quit(){
         this.wsOffers.forEach((data) => {
@@ -278,7 +280,6 @@ export default class Trystereo extends Events {
         const onConnect = () => {
             // this.dispatchEvent(new CustomEvent('connect', {detail: channel}))
             if(!this.channels.has(channel.id)){
-                channel.unsend = new Set()
                 this.channels.set(channel.id, channel)
                 this.channels.forEach((data) => {
                     if(data.id !== channel.id){
@@ -298,77 +299,42 @@ export default class Trystereo extends Events {
                     const add = data.replace('add:', '')
                     if(!channel.channels.has(add)){
                         channel.channels.add(add)
-                        for(const chan of this.channels.values()){
-                            if(channel.id !== chan.id){
-                                if(chan.channels.has(add)){
-                                    channel.send('trystereo:unsend:' + add)
-                                    if(!channel.unsend.has(add)){
-                                        channel.unsend.add(add)
-                                    }
-                                    // if(this.extra.has(data)){
-                                    //     this.extra.set(data, this.extra.get(data) + 1)
-                                    // } else {
-                                    //     this.extra.set(data, 1)
-                                    // }
-                                    break
-                                }
-                            }
-                        }
                     }
                 } else if(data.startsWith('sub:')){
                     const sub = data.replace('sub:', '')
                     if(channel.channels.has(sub)){
                         channel.channels.delete(sub)
-                        if(!channel.unsend.has(sub)){
-                            for(const chan of this.channels.values()){
-                                if(channel.id !== chan.id){
-                                    if(chan.channels.has(sub)){
-                                        chan.send('trystereo:send:' + sub)
-                                        if(chan.unsend.has(sub)){
-                                            chan.unsend.delete(sub)
-                                        }
-                                        // if(this.extra.has(data)){
-                                        //     const crunch = this.extra.get(data) - 1
-                                        //     if(crunch){
-                                        //         this.extra.set(data, crunch)
-                                        //     } else {
-                                        //         this.extra.delete(data)
-                                        //     }
-                                        // } else {
-                                        //     console.error('should have an extra user but did not find any')
-                                        // }
-                                        break
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else if(data.startsWith('unsend:')){
-                    const unsendVar = data.replace('unsend:', '')
-                    if(!channel.unsend.has(unsendVar)){
-                        channel.unsend.add(unsendVar)
-                    }
-                } else if(data.startsWith('send:')){
-                    const sendVar = data.replace('send:', '')
-                    if(channel.unsend.has(sendVar)){
-                        channel.unsend.delete(sendVar)
                     }
                 } else {
                     console.error('data is invalid')
                 }
             } else {
+                let useData
                 if(this.jsonParse){
                     try {
-                        data = JSON.parse(data)
+                        useData = JSON.parse(data)
                     } catch (err) {
                         console.error(err)
                         return
                     }
-                }
-                if(this.handler){
-                    this.handler(data, (datas) => {this.onSend(datas, channel.id)}, () => {this.emit('data', data, channel.id), () => {this.onData(channel, data)}})
                 } else {
-                    this.emit('data', data, channel.id)
+                    useData = data
+                }
+                this.emit('data', useData, channel.id)
+                if(this.deDupe){
+                    crypto.subtle.digest("SHA-256", new TextEncoder("utf-8").encode(data)).then((res) => {
+                        const id = Array.from(new Uint8Array(res)).map(b => ('00' + b.toString(16)).slice(-2)).join('')
+                        if(this.deDuped.size >= 1000){
+                            this.deDuped.clear()
+                        }
+                        if(!this.deDuped.has(id)){
+                            this.deDuped.add(id)
+                            this.onData(channel, data)
+                        }
+                    }).catch((err) => {
+                        console.error(err)
+                    })
+                } else {
                     this.onData(channel, data)
                 }
             }
@@ -386,21 +352,6 @@ export default class Trystereo extends Events {
         const onClose = () => {
             // this.dispatchEvent(new CustomEvent('close', {detail: channel}))
             onHandle()
-            channel.channels.forEach((id) => {
-                if(!channel.unsend.has(id)){
-                    for(const chan of this.channels.values()){
-                        if(channel.id !== chan.id){
-                            if(chan.channels.has(id)){
-                                chan.send('trystereo:send:' + id)
-                                if(chan.unsend.has(id)){
-                                    chan.unsend.delete(id)
-                                }
-                                break
-                            }
-                        }
-                    }
-                }
-            })
             this.channels.forEach((chan) => {
                 if(chan.id !== channel.id){
                     chan.send('trystereo:sub:' + channel.id)
@@ -451,8 +402,22 @@ export default class Trystereo extends Events {
     onData(channel, data){
         this.channels.forEach((chan) => {
             if(channel.id !== chan.id){
-                if(!chan.channels.has(channel.id) && !chan.unsend.has(channel.id)){
-                    chan.send(data)
+                if(!chan.channels.has(channel.id)){
+                    const test = channel.channels.intersection(chan.channels)
+                    if(test.size){
+                        let i = true
+                        for(const prop of test.values()){
+                            if(this.id > prop){
+                                i = false
+                                break
+                            }
+                        }
+                        if(i){
+                            chan.send(data)
+                        }
+                    } else {
+                        chan.send(data)
+                    }
                 }
             }
         })
