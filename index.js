@@ -51,8 +51,6 @@ export default class Trystereo extends Events {
         this.ws()
         this.timerWS = setInterval(() => {this.ws()}, this.announceSeconds)
         this.alternativeSeconds = 60 * 1000
-        this.deDupe = opts.deDupe
-        this.deDuped = this.deDupe ? new Set() : null
     }
     quit(){
         this.wsOffers.forEach((data) => {
@@ -309,34 +307,7 @@ export default class Trystereo extends Events {
                     console.error('data is invalid')
                 }
             } else {
-                let useData
-                if(this.jsonParse){
-                    try {
-                        useData = JSON.parse(data)
-                    } catch (err) {
-                        console.error(err)
-                        return
-                    }
-                } else {
-                    useData = data
-                }
-                this.emit('data', useData, channel.id)
-                if(this.deDupe){
-                    crypto.subtle.digest("SHA-256", new TextEncoder("utf-8").encode(data)).then((res) => {
-                        const id = Array.from(new Uint8Array(res)).map(b => ('00' + b.toString(16)).slice(-2)).join('')
-                        if(this.deDuped.size >= 1000){
-                            this.deDuped.clear()
-                        }
-                        if(!this.deDuped.has(id)){
-                            this.deDuped.add(id)
-                            this.onData(channel, data)
-                        }
-                    }).catch((err) => {
-                        console.error(err)
-                    })
-                } else {
-                    this.onData(channel, data)
-                }
+                this.emit('data', data, channel.id)
             }
         }
         // const onStream = (stream) => {
@@ -376,18 +347,6 @@ export default class Trystereo extends Events {
         channel.on('error', onError)
         channel.on('close', onClose)
     }
-    handleSession(chans, data){
-        this.channels.forEach((chan) => {
-            if(chan.id !== chans.id){
-                if(!chans.channels.has(chan.id)){
-                    // if(!chans.channels.intersection(chan.channels).size){
-                    //     chan.send(data)
-                    // }
-                    chan.send(data)
-                }
-            }
-        })
-    }
     onSend(data, id = null){
         if(id){
             if(this.channels.has(id)){
@@ -399,28 +358,31 @@ export default class Trystereo extends Events {
             })
         }
     }
-    onData(channel, data){
-        this.channels.forEach((chan) => {
-            if(channel.id !== chan.id){
-                if(!chan.channels.has(channel.id)){
-                    const test = channel.channels.intersection(chan.channels)
-                    if(test.size){
-                        let i = true
-                        for(const prop of test.values()){
-                            if(this.id > prop){
-                                i = false
-                                break
+    onMesh(id, data){
+        if(this.channels.has(id)){
+            const chans = this.channels.get(id)
+            this.channels.forEach((chan) => {
+                if(chans.id !== chan.id){
+                    if(!chan.channels.has(chans.id)){
+                        const test = chans.channels.intersection(chan.channels)
+                        if(test.size){
+                            let i = true
+                            for(const prop of test.values()){
+                                if(this.id > prop){
+                                    i = false
+                                    break
+                                }
                             }
-                        }
-                        if(i){
+                            if(i){
+                                chan.send(data)
+                            }
+                        } else {
                             chan.send(data)
                         }
-                    } else {
-                        chan.send(data)
                     }
                 }
-            }
-        })
+            })
+        }
     }
     checkClosing(){
         setTimeout(() => {
