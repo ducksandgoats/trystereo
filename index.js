@@ -12,7 +12,6 @@ export default class Trystereo extends Events {
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
-        this.jsonParse = Boolean(opts.jsonParse)
         this.hash = hash
         this.url = url + '?info_hash=' + this.hash
         if(opts.max){
@@ -88,7 +87,9 @@ export default class Trystereo extends Events {
         } else {
             this.wsOffers.forEach((data) => {
                 data.destroy((err) => {
-                    console.error(err)
+                    if(err){
+                        this.emit('error', err)
+                    }
                 })
             })
             this.wsOffers.clear()
@@ -98,7 +99,9 @@ export default class Trystereo extends Events {
         if(this.channels.size >= this.max){
             this.wsOffers.forEach((data) => {
                 data.destroy((err) => {
-                    console.error(err)
+                    if(err){
+                        this.emit('error', err)
+                    }
                 })
             })
             this.wsOffers.clear()
@@ -108,7 +111,9 @@ export default class Trystereo extends Events {
             if(this.clearOnMin){
                 this.wsOffers.forEach((data) => {
                     data.destroy((err) => {
-                        console.error(err)
+                        if(err){
+                            this.emit('error', err)
+                        }
                     })
                 })
                 this.wsOffers.clear()
@@ -141,7 +146,9 @@ export default class Trystereo extends Events {
                     }
                 })
                 .catch((e) => {
-                    console.error(e)
+                    if(err){
+                        this.emit('error', e)
+                    }
                 });
             } else if(this.socket.readyState === WebSocket.CONNECTING){
                 console.log('connecting')
@@ -181,16 +188,18 @@ export default class Trystereo extends Events {
                 }
             })
             .catch((e) => {
-                console.error(e)
+                if(err){
+                    this.emit('error', e)
+                }
             });
         }
         const handleMessage = (e) => {
-            console.log(e)
+            // console.log(e)
             let message
             try {
                 message = JSON.parse(e.data)
             } catch (error) {
-                console.error(error)
+                this.emit('error', error)
                 return
             }
             // handle message
@@ -202,7 +211,7 @@ export default class Trystereo extends Events {
             }
 
             if(this.channels.size >= this.max){
-                this.wsOffers.forEach((data) => {data.destroy((err) => {if(err){console.error(err)}})})
+                this.wsOffers.forEach((data) => {data.destroy((err) => {if(err){this.emit('error', err)}})})
                 this.wsOffers.clear()
                 return
             }
@@ -210,13 +219,14 @@ export default class Trystereo extends Events {
             const errMsg = message['failure reason']
 
             if (errMsg) {
-                console.error(`torrent tracker failure from ${this.socket.url} - ${errMsg}`)
                 if(errMsg === 'Relaying'){
-                if(message.relay){
-                    this.url = message.relay + '?info_hash=' + this.hash
-                    this.socket.close()
-                    this.soc()
-                }
+                    if(message.relay){
+                        this.url = message.relay + '?info_hash=' + this.hash
+                        this.socket.close()
+                        this.soc()
+                    }
+                } else {
+                    this.emit('error', new Error(`torrent tracker failure from ${this.socket.url} - ${errMsg}`))
                 }
                 return
             }
@@ -256,7 +266,7 @@ export default class Trystereo extends Events {
             }
         }
         const handleError = (e) => {
-            console.error(e)
+            this.emit('error', e)
         }
         const handleClose = (e) => {
             console.log(e)
@@ -304,10 +314,10 @@ export default class Trystereo extends Events {
                         channel.channels.delete(sub)
                     }
                 } else {
-                    console.error('data is invalid')
+                    this.emit('error', new Error('data is invalid'))
                 }
             } else {
-                this.emit('data', data, channel.id)
+                channel.emit('message', data)
             }
         }
         // const onStream = (stream) => {
