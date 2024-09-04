@@ -8,7 +8,7 @@ import { LocalStorage } from 'node-localstorage'
 export default class Trystereo extends Events {
     constructor(url, hash, opts){
         super()
-        const localStore = localStorage ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
+        const localStore = typeof(window) !== "undefined" && typeof(window.document) !== "undefined" ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
         this.id = localStore.getItem('id')
         if(!this.id){
             this.id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => {return ('0' + byte.toString(16)).slice(-2)}).join('')
