@@ -1,14 +1,18 @@
+const __dirname = import.meta.dirname
+import path from 'path'
 import Channel from '@thaunknown/simple-peer/lite.js'
 import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
+import { LocalStorage } from 'node-localstorage'
 
 export default class Trystereo extends Events {
     constructor(url, hash, opts){
         super()
-        this.id = localStorage.getItem('id')
+        const localStore = localStorage ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
+        this.id = localStore.getItem('id')
         if(!this.id){
             this.id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => {return ('0' + byte.toString(16)).slice(-2)}).join('')
-            localStorage.setItem('id', this.id)
+            localStore.setItem('id', this.id)
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
