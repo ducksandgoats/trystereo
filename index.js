@@ -177,7 +177,7 @@ export default class Trystereo extends Events {
                 for(const val of this.wsOffers.values()){
                     arr.push({offer_id: val.offer_id, offer: await Promise.resolve(val.offer)});
                 };
-                console.log('arr: ', arr.length, arr)
+                // console.log('arr: ', arr.length, arr)
                 return arr
             })()
             .then((data) => {
