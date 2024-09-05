@@ -1,6 +1,6 @@
 {
   "name": "trystereo",
-  "version": "8.0.5",
+  "version": "8.0.6",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -14,6 +14,7 @@
     "@thaunknown/simple-peer": "^10.0.10",
     "events": "^3.3.0",
     "node-localstorage": "^3.0.5",
-    "uint8-util": "^2.2.5"
+    "uint8-util": "^2.2.5",
+    "ws": "^8.18.0"
   }
 }

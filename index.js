@@ -4,15 +4,18 @@ import Channel from '@thaunknown/simple-peer/lite.js'
 import {hex2bin, bin2hex} from 'uint8-util'
 import Events from 'events'
 import { LocalStorage } from 'node-localstorage'
+import {WebSocket as WebSockets} from 'ws'
 
 export default class Trystereo extends Events {
     constructor(url, hash, opts){
         super()
-        const localStore = typeof(window) !== "undefined" && typeof(window.document) !== "undefined" ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
-        this.id = localStore.getItem('id')
+        this.browserOrNot = typeof(window) !== "undefined" && typeof(window.document) !== "undefined"
+        this.localStore = this.browserOrNot ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
+        this.Websocket = this.browserOrNot ? WebSocket : WebSockets
+        this.id = this.localStore.getItem('id')
         if(!this.id){
             this.id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => {return ('0' + byte.toString(16)).slice(-2)}).join('')
-            localStore.setItem('id', this.id)
+            this.localStore.setItem('id', this.id)
         }
         this.charset = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
         this.opts = opts.opts && typeof(opts.opts) === 'object' && !Array.isArray(opts.opts) ? opts.opts : {}
@@ -129,7 +132,7 @@ export default class Trystereo extends Events {
             return
         }
         if(this.socket){
-            if(this.socket.readyState === WebSocket.OPEN){
+            if(this.socket.readyState === this.Websocket.OPEN){
                 console.log('connected');
                 (async () => {
                     const arr = [];
@@ -154,10 +157,10 @@ export default class Trystereo extends Events {
                         this.emit('error', e)
                     }
                 });
-            } else if(this.socket.readyState === WebSocket.CONNECTING){
+            } else if(this.socket.readyState === this.Websocket.CONNECTING){
                 console.log('connecting')
                 // notify it is connecting by emitting a connecting event with connecting string
-            } else if(this.socket.readyState === WebSocket.CLOSING){
+            } else if(this.socket.readyState === this.Websocket.CLOSING){
                 this.checkClosing()
             } else {
                 delete this.socket
@@ -168,7 +171,7 @@ export default class Trystereo extends Events {
         }
     }
     soc(){
-        this.socket = new WebSocket(this.url)
+        this.socket = new this.Websocket(this.url)
         const handleOpen = (e) => {
             console.log(e);
             // this.relay = true
@@ -400,7 +403,7 @@ export default class Trystereo extends Events {
     }
     checkClosing(){
         setTimeout(() => {
-            if(this.socket.readyState === WebSocket.CLOSED){
+            if(this.socket.readyState === this.Websocket.CLOSED){
                 delete this.socket
                 this.soc()
             } else {
