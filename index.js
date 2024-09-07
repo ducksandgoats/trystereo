@@ -9,9 +9,10 @@ import {WebSocket as WebSockets} from 'ws'
 export default class Trystereo extends Events {
     constructor(url, hash, opts){
         super()
+        this.dev = Boolean(opts.dev)
         this.browserOrNot = typeof(window) !== "undefined" && typeof(window.document) !== "undefined"
         this.localStore = this.browserOrNot ? localStorage : new LocalStorage(path.join(__dirname, 'store'))
-        this.Websocket = this.browserOrNot ? WebSocket : WebSockets
+        // this.Websocket = this.browserOrNot ? WebSocket : WebSockets
         this.id = this.localStore.getItem('id')
         if(!this.id){
             this.id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => {return ('0' + byte.toString(16)).slice(-2)}).join('')
@@ -103,6 +104,7 @@ export default class Trystereo extends Events {
         }
     }
     ws(){
+        const Websocket = this.browserOrNot ? WebSocket : WebSockets
         if(this.channels.size >= this.max){
             this.wsOffers.forEach((data) => {
                 data.destroy((err) => {
@@ -132,7 +134,7 @@ export default class Trystereo extends Events {
             return
         }
         if(this.socket){
-            if(this.socket.readyState === this.Websocket.OPEN){
+            if(this.socket.readyState === Websocket.OPEN){
                 console.log('connected');
                 (async () => {
                     const arr = [];
@@ -153,14 +155,12 @@ export default class Trystereo extends Events {
                     }
                 })
                 .catch((e) => {
-                    if(err){
-                        this.emit('error', e)
-                    }
+                    this.emit('error', e)
                 });
-            } else if(this.socket.readyState === this.Websocket.CONNECTING){
+            } else if(this.socket.readyState === Websocket.CONNECTING){
                 console.log('connecting')
                 // notify it is connecting by emitting a connecting event with connecting string
-            } else if(this.socket.readyState === this.Websocket.CLOSING){
+            } else if(this.socket.readyState === Websocket.CLOSING){
                 this.checkClosing()
             } else {
                 delete this.socket
@@ -171,9 +171,12 @@ export default class Trystereo extends Events {
         }
     }
     soc(){
-        this.socket = new this.Websocket(this.url)
+        const Websocket = this.browserOrNot ? WebSocket : WebSockets
+        this.socket = new Websocket(this.url)
         const handleOpen = (e) => {
-            console.log(e);
+            if(this.dev){
+                console.log('websocket open', e)
+            }
             // this.relay = true
             (async () => {
                 const arr = [];
@@ -195,13 +198,13 @@ export default class Trystereo extends Events {
                 }
             })
             .catch((e) => {
-                if(err){
-                    this.emit('error', e)
-                }
+                this.emit('error', e)
             });
         }
         const handleMessage = (e) => {
-            // console.log(e)
+            if(this.dev){
+                console.log('websocket data', e.data)
+            }
             let message
             try {
                 message = JSON.parse(e.data)
@@ -273,10 +276,15 @@ export default class Trystereo extends Events {
             }
         }
         const handleError = (e) => {
+            if(this.dev){
+                console.error('websocket error', e)
+            }
             this.emit('error', e)
         }
         const handleClose = (e) => {
-            console.log(e)
+            if(this.dev){
+                console.log('websocket close', e)
+            }
             // this.relay = false
             handleEvent()
         }
@@ -293,6 +301,9 @@ export default class Trystereo extends Events {
     }
     handleChannel(channel){
         const onConnect = () => {
+            if(this.dev){
+                console.log('webrtc connect', channel.id)
+            }
             // this.dispatchEvent(new CustomEvent('connect', {detail: channel}))
             if(!this.channels.has(channel.id)){
                 this.channels.set(channel.id, channel)
@@ -308,6 +319,9 @@ export default class Trystereo extends Events {
         }
         const onData = (data) => {
             data = new TextDecoder().decode(data)
+            if(this.dev){
+                console.log('webrtc data', data)
+            }
             if(data.startsWith('trystereo:')){
                 data = data.replace('trystereo:', '')
                 if(data.startsWith('add:')){
@@ -334,10 +348,16 @@ export default class Trystereo extends Events {
         //     this.dispatchEvent(new CustomEvent('error', {detail: {id: channel.id, ev: {track, stream}}}))
         // }
         const onError = (err) => {
+            if(this.dev){
+                console.error('webrtc error', err)
+            }
             err.id = channel.id
             this.emit('error', err)
         }
         const onClose = () => {
+            if(this.dev){
+                console.log('webrtc data', channel.id)
+            }
             // this.dispatchEvent(new CustomEvent('close', {detail: channel}))
             onHandle()
             this.channels.forEach((chan) => {
@@ -403,7 +423,8 @@ export default class Trystereo extends Events {
     }
     checkClosing(){
         setTimeout(() => {
-            if(this.socket.readyState === this.Websocket.CLOSED){
+            const Websocket = this.browserOrNot ? WebSocket : WebSockets
+            if(this.socket.readyState === Websocket.CLOSED){
                 delete this.socket
                 this.soc()
             } else {
